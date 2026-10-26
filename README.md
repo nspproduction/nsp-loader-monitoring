@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Loader Monitoring
 
-## Getting Started
+ระบบติดตามคิวโหลดสินค้า — Next.js 16 (App Router) + TypeScript + Tailwind v4 + Supabase + Vercel
 
-First, run the development server:
+## สรุป flow
+
+| ฝั่ง | หน้าจอ | หน้าที่ |
+| --- | --- | --- |
+| Operator (โรงงาน) | `/manage` | แสดง QR (lazy regen เมื่อถูกใช้งาน) + คุมคิว (เริ่มโหลด / โหลดเสร็จ / ยกเลิก / เลื่อนลำดับ) |
+| Operator | `/reports` | รายงานย้อนหลัง + กราฟ + export CSV |
+| จอ Monitor / TV | `/dashboard` | จอใหญ่แสดงคิวรอ + คิวที่กำลังโหลด + เสร็จแล้ว (public, read-only) |
+| คนขับรถ | `/arrive?t=<token>` | สแกน QR → กรอกฟอร์ม → บันทึกเวลาที่มาถึง |
+| คนขับรถ | `/q/<slug>` | หน้าสถานะคิวตัวเอง (realtime: ลำดับที่, คิวข้างหน้า, กำลังโหลด) |
+
+## การ setup ครั้งแรก
+
+### 1. สร้าง Supabase project
+
+- สร้าง project ใน [Supabase Dashboard](https://supabase.com/dashboard) (region: ap-southeast-1 แนะนำ)
+- รัน SQL ที่ `supabase/migrations/0001_initial_schema.sql` ใน SQL Editor
+- รัน SQL ที่ `supabase/migrations/0003_qr_tokens_realtime.sql` (เพิ่ม qr_tokens เข้า realtime publication)
+- สร้าง auth user (Authentication → Users → Add user) ด้วย email `<username>@loader.local` และ password + Auto Confirm
+- รัน SQL ที่ `supabase/migrations/0002_seed_operator.sql` หลังเปลี่ยน UUID ให้ตรงกับ user ที่สร้าง
+
+### 2. ตั้ง environment variables
+
+copy `.env.local.example` → `.env.local` แล้วเติมค่า:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_...        # Dashboard → Project Settings → API
+
+NEXT_PUBLIC_APP_URL=http://localhost:3000       # ตอน deploy เปลี่ยนเป็น https://<domain>
+QR_TOKEN_TTL_SECONDS=900                        # 15 นาที — QR regen อัตโนมัติเมื่อหมดอายุ
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. รัน dev server
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+เข้า http://localhost:3000 → login ด้วย username/password → เข้าหน้า `/manage` เห็น QR + คิว
 
-## Learn More
+ทดสอบฝั่งคนขับ: สแกน QR จากหน้า manage ด้วยมือถืออีกเครื่อง (ต้องเปิด dev server ให้ LAN เข้าได้ — ใช้ `npm run dev -- -H 0.0.0.0`)
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy ขึ้น Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. push repo นี้ขึ้น GitHub
+2. Vercel → New Project → import repo → Framework: Next.js (auto-detect)
+3. ใส่ env vars 5 ตัวใน Project Settings → Environment Variables
+4. Deploy → เปลี่ยน `NEXT_PUBLIC_APP_URL` เป็น production URL แล้ว redeploy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## เพิ่ม operator user เพิ่มเติม
 
-## Deploy on Vercel
+ทำแบบเดียวกับ setup ขั้นที่ 1 — สร้าง auth user ด้วย email `<username>@loader.local` แล้ว insert row ใน `public.operators` พร้อม UUID ของ user
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## โครงไฟล์
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/
+  (operator)/          # กลุ่ม route ที่ต้อง login (manage, reports)
+    manage/            # หน้าควบคุมคิว + QR
+    reports/           # หน้ารายงาน + กราฟ
+  dashboard/           # public: จอใหญ่สำหรับโรงงาน
+  arrive/              # public: หน้าฟอร์มสำหรับคนขับ
+  q/[slug]/            # public: หน้าสถานะคิวของคนขับ
+  login/
+actions/               # server actions (auth, token, queue, arrival)
+lib/supabase/          # client / server / admin factories
+supabase/migrations/   # SQL schema + seed
+middleware.ts          # auth guard (/manage, /reports)
+```
