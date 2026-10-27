@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  # Next.js 16 + React 19 require Node 20+. Pin to avoid Netlify's older default.
+  NODE_VERSION = "20"
+  # Skip stale lockfile warning when Netlify uses `npm ci`.
+  NPM_FLAGS = "--legacy-peer-deps=false"
+
+# @netlify/plugin-nextjs is injected automatically for Next.js projects — no
+# [[plugins]] block needed. It handles middleware, server actions, image opt,
+# and dynamic routes via Netlify Functions / Edge Functions.

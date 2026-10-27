@@ -31,7 +31,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
 SUPABASE_SERVICE_ROLE_KEY=sb_secret_...        # Dashboard → Project Settings → API
 
-NEXT_PUBLIC_APP_URL=http://localhost:3000       # ตอน deploy เปลี่ยนเป็น https://<domain>
+APP_URL=http://localhost:3000                   # ตอน deploy เปลี่ยนเป็น https://<domain>
 QR_TOKEN_TTL_SECONDS=900                        # 15 นาที — QR regen อัตโนมัติเมื่อหมดอายุ
 ```
 
@@ -51,7 +51,7 @@ npm run dev
 1. push repo นี้ขึ้น GitHub
 2. Vercel → New Project → import repo → Framework: Next.js (auto-detect)
 3. ใส่ env vars 5 ตัวใน Project Settings → Environment Variables
-4. Deploy → เปลี่ยน `NEXT_PUBLIC_APP_URL` เป็น production URL แล้ว redeploy
+4. Deploy → เปลี่ยน `APP_URL` เป็น production URL แล้ว redeploy
 
 ## เพิ่ม operator user เพิ่มเติม
 

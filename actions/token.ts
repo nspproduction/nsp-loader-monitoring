@@ -18,7 +18,7 @@ export async function issueTokenAction(): Promise<IssuedToken | { error: string 
   if (!user) return { error: "unauthorized" };
 
   const nowIso = new Date().toISOString();
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  const base = process.env.APP_URL ?? "";
 
   // Reuse the operator's existing valid, unused token if one is still active —
   // otherwise refreshing the dashboard would mint a brand-new row every time.
