@@ -76,19 +76,19 @@ export function MonitorBoard({ initial }: { initial: QueueRow[] }) {
 
   return (
     <div className="fixed inset-0 bg-slate-950 text-slate-100 flex flex-col overflow-hidden">
-      <header className="flex items-center justify-between px-8 py-4 border-b border-slate-800 bg-slate-900">
-        <div className="flex items-center gap-3">
-          <Truck className="text-blue-400" size={28} />
-          <h1 className="text-2xl font-semibold tracking-tight">
+      <header className="flex items-center justify-between px-4 md:px-8 py-3 md:py-4 border-b border-slate-800 bg-slate-900">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0">
+          <Truck className="text-blue-400 shrink-0 size-6 md:size-7" />
+          <h1 className="text-lg md:text-2xl font-semibold tracking-tight truncate">
             Loader Monitoring
           </h1>
         </div>
         <div className="flex items-center gap-6 text-right">
           <div>
-            <div className="text-4xl font-mono font-bold tabular-nums">
+            <div className="text-2xl md:text-4xl font-mono font-bold tabular-nums">
               {now.toLocaleTimeString("th-TH", { hour12: false })}
             </div>
-            <div className="text-sm text-slate-400">
+            <div className="hidden sm:block text-sm text-slate-400">
               {now.toLocaleDateString("th-TH", {
                 weekday: "long",
                 year: "numeric",
@@ -96,11 +96,18 @@ export function MonitorBoard({ initial }: { initial: QueueRow[] }) {
                 day: "numeric"
               })}
             </div>
+            <div className="sm:hidden text-xs text-slate-400">
+              {now.toLocaleDateString("th-TH", {
+                year: "numeric",
+                month: "short",
+                day: "numeric"
+              })}
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 grid grid-cols-2 gap-0 overflow-hidden">
+      <main className="flex-1 grid grid-cols-1 grid-rows-2 md:grid-cols-2 md:grid-rows-1 gap-0 overflow-hidden">
         <WaitingPanel rows={waiting} now={now} />
         <LoadingPanel loading={loading} done={done} now={now} />
       </main>
@@ -110,7 +117,7 @@ export function MonitorBoard({ initial }: { initial: QueueRow[] }) {
 
 function WaitingPanel({ rows, now }: { rows: QueueRow[]; now: Date }) {
   return (
-    <section className="border-r border-slate-800 flex flex-col overflow-hidden">
+    <section className="border-b md:border-b-0 md:border-r border-slate-800 flex flex-col overflow-hidden min-h-0">
       <div className="px-6 py-4 bg-slate-900/60 border-b border-slate-800 flex items-center justify-between">
         <h2 className="text-xl font-semibold flex items-center gap-2">
           <Clock className="text-amber-400" size={22} />
@@ -191,7 +198,7 @@ function LoadingPanel({
   now: Date;
 }) {
   return (
-    <section className="flex flex-col overflow-hidden">
+    <section className="flex flex-col overflow-hidden min-h-0">
       <div className="px-6 py-4 bg-slate-900/60 border-b border-slate-800 flex items-center justify-between">
         <h2 className="text-xl font-semibold flex items-center gap-2">
           <Truck className="text-blue-400" size={22} />
