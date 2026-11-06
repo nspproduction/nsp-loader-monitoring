@@ -6,7 +6,7 @@ import { twMerge } from "tailwind-merge";
  * Factory runs 24/7 so a calendar-day filter is wrong — rows that are still waiting
  * or loading always stay visible; completed/cancelled rows fall off after this window.
  */
-export const DONE_WINDOW_HOURS = 12;
+export const DONE_WINDOW_HOURS = 24;
 export const DONE_WINDOW_MS = DONE_WINDOW_HOURS * 60 * 60 * 1000;
 
 export function cn(...inputs: ClassValue[]) {

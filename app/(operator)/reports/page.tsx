@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { QueueRow } from "@/lib/types";
 import { ReportsClient } from "./reports-client";
@@ -29,6 +30,15 @@ export default async function ReportsPage({
   to.setHours(23, 59, 59, 999);
 
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const { data: me } = await supabase
+    .from("operators")
+    .select("is_admin")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!me?.is_admin) redirect("/manage");
+
   const { data: rows } = await supabase
     .from("queues")
     .select("*")

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Clock, PackageOpen, CheckCircle2, Truck } from "lucide-react";
+import { Clock, PackageOpen, CheckCircle2, Truck, XCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { QueueRow } from "@/lib/types";
 import { formatHHMM, formatDuration, DONE_WINDOW_MS } from "@/lib/utils";
@@ -47,12 +47,12 @@ export function MonitorBoard({ initial }: { initial: QueueRow[] }) {
     return () => window.clearInterval(id);
   }, []);
 
-  // Minute-level ticker lets the memo roll "done" rows off the 12h window
-  // without recomputing every second.
+  // Minute-level ticker lets the memo roll "done"/"cancelled" rows off the
+  // 24h window without recomputing every second.
   const minuteBucket = Math.floor(now.getTime() / 60_000);
 
-  const { waiting, loading, done } = useMemo(() => {
-    const doneCutoff = minuteBucket * 60_000 - DONE_WINDOW_MS;
+  const { waiting, loading, done, cancelled } = useMemo(() => {
+    const cutoff = minuteBucket * 60_000 - DONE_WINDOW_MS;
     const waiting = rows
       .filter((r) => r.status === "waiting")
       .sort((a, b) => a.priority - b.priority);
@@ -66,12 +66,22 @@ export function MonitorBoard({ initial }: { initial: QueueRow[] }) {
         (r) =>
           r.status === "done" &&
           r.finished_loading_at &&
-          new Date(r.finished_loading_at).getTime() >= doneCutoff
+          new Date(r.finished_loading_at).getTime() >= cutoff
       )
       .sort((a, b) =>
         (b.finished_loading_at ?? "").localeCompare(a.finished_loading_at ?? "")
       );
-    return { waiting, loading, done };
+    const cancelled = rows
+      .filter(
+        (r) =>
+          r.status === "cancelled" &&
+          r.cancelled_at &&
+          new Date(r.cancelled_at).getTime() >= cutoff
+      )
+      .sort((a, b) =>
+        (b.cancelled_at ?? "").localeCompare(a.cancelled_at ?? "")
+      );
+    return { waiting, loading, done, cancelled };
   }, [rows, minuteBucket]);
 
   return (
@@ -109,13 +119,13 @@ export function MonitorBoard({ initial }: { initial: QueueRow[] }) {
 
       <main className="flex-1 grid grid-cols-1 grid-rows-2 md:grid-cols-2 md:grid-rows-1 gap-0 overflow-hidden">
         <WaitingPanel rows={waiting} now={now} />
-        <LoadingPanel loading={loading} done={done} now={now} />
+        <LoadingPanel loading={loading} done={done} cancelled={cancelled} now={now} />
       </main>
     </div>
   );
 }
 
-function WaitingPanel({ rows, now }: { rows: QueueRow[]; now: Date }) {
+export function WaitingPanel({ rows, now }: { rows: QueueRow[]; now: Date }) {
   return (
     <section className="border-b md:border-b-0 md:border-r border-slate-800 flex flex-col overflow-hidden min-h-0">
       <div className="px-6 py-4 bg-slate-900/60 border-b border-slate-800 flex items-center justify-between">
@@ -188,15 +198,18 @@ function WaitingRow({
   );
 }
 
-function LoadingPanel({
+export function LoadingPanel({
   loading,
   done,
+  cancelled,
   now
 }: {
   loading: QueueRow[];
   done: QueueRow[];
+  cancelled: QueueRow[];
   now: Date;
 }) {
+  const empty = loading.length === 0 && done.length === 0 && cancelled.length === 0;
   return (
     <section className="flex flex-col overflow-hidden min-h-0">
       <div className="px-6 py-4 bg-slate-900/60 border-b border-slate-800 flex items-center justify-between">
@@ -211,10 +224,13 @@ function LoadingPanel({
           <span className="text-emerald-300">
             เสร็จ <b className="text-2xl font-bold tabular-nums">{done.length}</b>
           </span>
+          <span className="text-rose-300">
+            ยกเลิก <b className="text-2xl font-bold tabular-nums">{cancelled.length}</b>
+          </span>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {loading.length === 0 && done.length === 0 ? (
+        {empty ? (
           <div className="h-full flex items-center justify-center text-slate-500 text-lg">
             ยังไม่มีรายการ
           </div>
@@ -225,6 +241,9 @@ function LoadingPanel({
             ))}
             {done.map((row) => (
               <DoneRow key={row.id} row={row} />
+            ))}
+            {cancelled.map((row) => (
+              <CancelledRow key={row.id} row={row} />
             ))}
           </>
         )}
@@ -300,6 +319,34 @@ function DoneRow({ row }: { row: QueueRow }) {
         </div>
         <div className="text-lg font-bold tabular-nums">
           ใช้ {formatDuration(loadMs)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CancelledRow({ row }: { row: QueueRow }) {
+  return (
+    <div className="rounded-2xl border-2 border-rose-500/70 bg-rose-500/15 p-4 flex items-center gap-4 relative overflow-hidden">
+      <div className="absolute left-0 top-0 bottom-0 w-2 bg-rose-400" />
+      <div className="shrink-0 w-14 h-14 rounded-xl bg-rose-500/30 ring-2 ring-rose-300/40 flex items-center justify-center">
+        <XCircle className="text-rose-100" size={30} />
+      </div>
+      <div className="flex-1 min-w-0 text-rose-50">
+        <div className="text-xs uppercase tracking-[0.2em] text-rose-200 font-bold">
+          ยกเลิก
+        </div>
+        <div className="text-2xl font-bold font-mono tracking-wide truncate line-through decoration-rose-300/60">
+          {row.license_plate}
+        </div>
+        <div className="text-sm text-rose-100/80 truncate">
+          {row.customer_name} · {row.driver_name}
+          {row.cancel_reason ? ` · ${row.cancel_reason}` : ""}
+        </div>
+      </div>
+      <div className="text-right shrink-0 text-rose-50">
+        <div className="text-xs text-rose-200">
+          ยกเลิก {row.cancelled_at && formatHHMM(row.cancelled_at)}
         </div>
       </div>
     </div>

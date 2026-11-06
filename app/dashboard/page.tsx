@@ -8,10 +8,10 @@ export const dynamic = "force-dynamic";
 
 export default async function MonitorPage() {
   const admin = createAdminClient();
-  // Widen a bit beyond the client's 12h cutoff so completed rows near the edge are included.
+  // Widen beyond the client's 24h cutoff so completed/cancelled rows near the edge are included.
   // Server component runs per request (admin client is uncached) — Date.now() is intentional here.
   // eslint-disable-next-line react-hooks/purity
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
   const { data: rows } = await admin
     .from("queues")

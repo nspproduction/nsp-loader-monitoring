@@ -34,5 +34,6 @@ export interface OperatorRow {
   username: string;
   display_name: string;
   is_active: boolean;
+  is_admin: boolean;
   created_at: string;
 }
