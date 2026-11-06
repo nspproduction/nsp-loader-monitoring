@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Loader2, Clock, XCircle, Truck } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle2, Loader2, Clock, XCircle, Truck, Monitor } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { QueueRow } from "@/lib/types";
 import { formatHHMM, formatDuration } from "@/lib/utils";
@@ -121,6 +122,14 @@ export function DriverStatus({
             </ul>
           </section>
         )}
+
+        <Link
+          href="/dashboard"
+          className="flex items-center justify-center gap-2 w-full bg-slate-900 hover:bg-slate-800 text-white rounded-2xl py-3 text-sm font-medium transition-colors"
+        >
+          <Monitor size={18} />
+          ดูบอร์ดคิวทั้งหมด
+        </Link>
 
         <p className="text-xs text-center text-slate-400">
           หน้านี้อัปเดตอัตโนมัติ · บันทึกลิงก์นี้เพื่อตรวจสอบสถานะได้ตลอด
